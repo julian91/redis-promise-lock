@@ -38,9 +38,10 @@ export class Lock {
   constructor (redisClient: RedisClient, options = {} as OptionalLockOptions) {
     if (!redisClient) throw new Error(`[${packageName}] - No redisClient provided.`)
     this.client = redisClient
-    this.defaultRetryLimit = options.retryLimit || this.defaultRetryLimit
-    this.defaultRetryDelay = options.retryDelay || this.defaultRetryDelay
-    this.defaultTtl = options.ttl || this.defaultTtl
+    const defaultOptions = this.getOptions(options)
+    this.defaultRetryLimit = defaultOptions.retryLimit
+    this.defaultRetryDelay = defaultOptions.retryDelay
+    this.defaultTtl = defaultOptions.ttl
   }
 
   /**
@@ -58,13 +59,13 @@ export class Lock {
    * @param lockSpecificOptions optional overrides of default lock options
    * @returns merged LockOptions, falls back to default if no OptionalLockOptions provided
    */
-  private getOptions (lockSpecificOptions = {} as OptionalLockOptions): LockOptions {
+  public getOptions (lockSpecificOptions = {} as OptionalLockOptions): LockOptions {
     const options = { // use default if no lock-specific stuff
       retryLimit: lockSpecificOptions.retryLimit || this.defaultRetryLimit,
       retryDelay: lockSpecificOptions.retryDelay || this.defaultRetryDelay,
       ttl: lockSpecificOptions.ttl || this.defaultTtl
     }
-
+// hmmm
     if (!(typeof options.retryLimit === 'number' && options.retryLimit > 0)) throw new Error(`[${packageName}] - Invalid retryLimit provided! Must be a number greater than 0.`)
     if (!(typeof options.retryDelay === 'number' && options.retryDelay > 0)) throw new Error(`[${packageName}] - Invalid retryDelay provided! Must be a number greater than 0.`)
     if (!(typeof options.ttl === 'number' && options.ttl >= 0)) throw new Error(`[${packageName}] - Invalid ttl provided! Must be a number greater than or equal to 0.`)
