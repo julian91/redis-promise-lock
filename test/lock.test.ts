@@ -2,9 +2,9 @@
 import { Lock } from '../src/lock'
 
 const defaultMockedClient = {
-  setNX: async () => {},
-  expire: async () => {},
-  del: async () => {}
+  setNX: async () => { },
+  expire: async () => { },
+  del: async () => { }
 }
 
 const packageName = 'redis-promise-lock'
@@ -105,7 +105,7 @@ describe('test applyLock', () => {
 
     const client = {
       setNX: jest.fn(async () => true),
-      expire: jest.fn(async (key, payload) => {})
+      expire: jest.fn(async (key, payload) => { })
     }
     const l1 = new Lock(client)
 
@@ -120,7 +120,7 @@ describe('test applyLock', () => {
 
     const client = {
       setNX: jest.fn(async () => true),
-      expire: jest.fn(async (key, payload) => {})
+      expire: jest.fn(async (key, payload) => { })
     }
     const l1 = new Lock(client)
 
@@ -134,7 +134,7 @@ describe('test applyLock', () => {
 
     const client = {
       setNX: jest.fn(async () => false),
-      expire: jest.fn(async (key, payload) => {})
+      expire: jest.fn(async (key, payload) => { })
     }
     const l1 = new Lock(client)
 
@@ -146,5 +146,18 @@ describe('test applyLock', () => {
 
 })
 
+describe('test releaseLock', () => {
 
+  it('should delete redisKey with prefix', async () => {
 
+    const client = {
+      del: jest.fn(async (key) => { }),
+    }
+    const l1 = new Lock(client)
+    const expectedKey = l1.getRedisKey('gunna')
+
+    await l1.releaseLock('gunna')
+    expect(client.del).toHaveBeenCalled()
+    expect(client.del).toHaveBeenCalledWith(expectedKey)
+  })
+})
