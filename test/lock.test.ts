@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { Lock } from '../src/lock'
-import { createClient } from 'redis'
 
-const client = createClient({
-  url: 'redis://127.0.0.1:6379'
-})
+const defaultMockedClient = {
+  setNX: async () => {},
+  expire: async () => {},
+  del: async () => {}
+}
 
 const packageName = 'redis-promise-lock'
 
@@ -19,12 +20,12 @@ describe('test initialization of class', () => {
   })
 
   it('should create redis instance', () => {
-    expect(() => { new Lock(client) }).not.toThrowError()
+    expect(() => { new Lock(defaultMockedClient) }).not.toThrowError()
   })
 
   it('should override default options if provided', () => {
 
-    const l1 = new Lock(client)
+    const l1 = new Lock(defaultMockedClient)
     expect(l1.getOptions()).toEqual({
       retryLimit: defaultRetryLimit,
       retryDelay: defaultRetryDelay,
@@ -36,7 +37,7 @@ describe('test initialization of class', () => {
       retryDelay: 420,
       ttl: 1337
     }
-    const l2 = new Lock(client, overriddenOptions)
+    const l2 = new Lock(defaultMockedClient, overriddenOptions)
     expect(l2.getOptions()).toEqual(overriddenOptions)
 
   })
@@ -46,7 +47,7 @@ describe('test initialization of class', () => {
 describe('test getOptions', () => {
 
   it('should throw on invalid paramater types', () => {
-    const l1 = new Lock(client)
+    const l1 = new Lock(defaultMockedClient)
     expect(() => { l1.getOptions({ retryLimit: 'NaN' }) }).toThrowError(`[${packageName}] - Invalid retryLimit provided! Must be a number greater than 0.`)
 
     expect(() => { l1.getOptions({ retryDelay: 0 }) }).toThrowError(`[${packageName}] - Invalid retryDelay provided! Must be a number greater than 0.`)
@@ -55,12 +56,12 @@ describe('test getOptions', () => {
   })
 
   it('should accept 0 as ttl value', () => {
-    const l1 = new Lock(client)
+    const l1 = new Lock(defaultMockedClient)
     expect(() => { l1.getOptions({ ttl: 0 }) }).not.toThrowError()
   })
 
   it('should return options object with overridden parameters (rest default)', () => {
-    const l1 = new Lock(client)
+    const l1 = new Lock(defaultMockedClient)
     const testObj6 = l1.getOptions({ retryLimit: 1337 })
     const testObj9 = l1.getOptions({ retryDelay: 6969 })
     const testObj420 = l1.getOptions({ ttl: 420 })
@@ -88,7 +89,7 @@ describe('test getOptions', () => {
 describe('test getRedisKey', () => {
 
   it('should throw on invalid paramater types', () => {
-    const l1 = new Lock(client)
+    const l1 = new Lock(defaultMockedClient)
 
     expect(() => { l1.getRedisKey() }).toThrowError(`[${packageName}] - Invalid lockName provided! Must be a non empty string.`)
 
@@ -98,21 +99,52 @@ describe('test getRedisKey', () => {
   })
 })
 
-// ToDo: Create redis mocks
-// describe('test applyLock', () => {
-//   //
-//   it('should set ttl to lock if ttl is greater than 0 and lock is new', async () => {
-//     const l1 = new Lock(client)
-//     const lockApplied = await l1.applyLock('beer', 'tasty', 69)
-//     expect(lockApplied).toEqual(true)
-//   })
+describe('test applyLock', () => {
 
-//   // it('should not add ttl to existing lock', () => {
-//   //   const l1 = new Lock(client)
+  it('should set ttl to lock if ttl is greater than 0 and lock is new', async () => {
 
-//   //   expect(() => { l1.applyLock('beer', 'tasty', 69) }).toEqual(true)
-//   // })
-// })
+    const client = {
+      setNX: jest.fn(async () => true),
+      expire: jest.fn(async (key, payload) => {})
+    }
+    const l1 = new Lock(client)
+
+    const lockApplied = await l1.applyLock('beer', 'tasty', 69)
+    expect(lockApplied).toEqual(true)
+    expect(client.expire).toHaveBeenCalled()
+    expect(client.expire).toHaveBeenCalledWith('beer', 69)
+
+  })
+
+  it('should not add ttl if ttl is 0 (infinite ttl)', async () => {
+
+    const client = {
+      setNX: jest.fn(async () => true),
+      expire: jest.fn(async (key, payload) => {})
+    }
+    const l1 = new Lock(client)
+
+    const lockApplied = await l1.applyLock('beer', 'tasty', 0)
+    expect(lockApplied).toEqual(true)
+    expect(client.expire).not.toHaveBeenCalled()
+
+  })
+
+  it('should not add ttl to existing lock', async () => {
+
+    const client = {
+      setNX: jest.fn(async () => false),
+      expire: jest.fn(async (key, payload) => {})
+    }
+    const l1 = new Lock(client)
+
+    const lockApplied = await l1.applyLock('beer', 'tasty', 1337)
+    expect(lockApplied).toEqual(false)
+    expect(client.expire).not.toHaveBeenCalled()
+
+  })
+
+})
 
 
 
