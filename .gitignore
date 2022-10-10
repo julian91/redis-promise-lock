@@ -1,0 +1,9 @@
+node_modules
+.vscode
+.npm
+.DS_Store
+.idea
+TODO.md
+dump.rdb
+lib/
+test.ts
