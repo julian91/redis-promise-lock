@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Lock } from '../src/lock'
 import { createClient } from 'redis'
+
 const client = createClient({
   url: 'redis://127.0.0.1:6379'
 })
@@ -39,5 +40,79 @@ describe('test initialization of class', () => {
     expect(l2.getOptions()).toEqual(overriddenOptions)
 
   })
-  
+
 })
+
+describe('test getOptions', () => {
+
+  it('should throw on invalid paramater types', () => {
+    const l1 = new Lock(client)
+    expect(() => { l1.getOptions({ retryLimit: 'NaN' }) }).toThrowError(`[${packageName}] - Invalid retryLimit provided! Must be a number greater than 0.`)
+
+    expect(() => { l1.getOptions({ retryDelay: 0 }) }).toThrowError(`[${packageName}] - Invalid retryDelay provided! Must be a number greater than 0.`)
+
+    expect(() => { l1.getOptions({ retryLimit: -1 }) }).toThrowError(`[${packageName}] - Invalid retryLimit provided! Must be a number greater than 0.`)
+  })
+
+  it('should accept 0 as ttl value', () => {
+    const l1 = new Lock(client)
+    expect(() => { l1.getOptions({ ttl: 0 }) }).not.toThrowError()
+  })
+
+  it('should return options object with overridden parameters (rest default)', () => {
+    const l1 = new Lock(client)
+    const testObj6 = l1.getOptions({ retryLimit: 1337 })
+    const testObj9 = l1.getOptions({ retryDelay: 6969 })
+    const testObj420 = l1.getOptions({ ttl: 420 })
+
+    expect(testObj6).toMatchObject({
+      retryLimit: 1337,
+      retryDelay: defaultRetryDelay,
+      ttl: defaultTtl
+    })
+
+    expect(testObj9).toMatchObject({
+      retryLimit: defaultRetryLimit,
+      retryDelay: 6969,
+      ttl: defaultTtl
+    })
+
+    expect(testObj420).toMatchObject({
+      retryLimit: defaultRetryLimit,
+      retryDelay: defaultRetryDelay,
+      ttl: 420
+    })
+  })
+})
+
+describe('test getRedisKey', () => {
+
+  it('should throw on invalid paramater types', () => {
+    const l1 = new Lock(client)
+
+    expect(() => { l1.getRedisKey() }).toThrowError(`[${packageName}] - Invalid lockName provided! Must be a non empty string.`)
+
+    expect(() => { l1.getRedisKey(6969) }).toThrowError(`[${packageName}] - Invalid lockName provided! Must be a non empty string.`)
+
+    expect(() => { l1.getRedisKey('') }).toThrowError(`[${packageName}] - Invalid lockName provided! Must be a non empty string.`)
+  })
+})
+
+// ToDo: Create redis mocks
+// describe('test applyLock', () => {
+//   //
+//   it('should set ttl to lock if ttl is greater than 0 and lock is new', async () => {
+//     const l1 = new Lock(client)
+//     const lockApplied = await l1.applyLock('beer', 'tasty', 69)
+//     expect(lockApplied).toEqual(true)
+//   })
+
+//   // it('should not add ttl to existing lock', () => {
+//   //   const l1 = new Lock(client)
+
+//   //   expect(() => { l1.applyLock('beer', 'tasty', 69) }).toEqual(true)
+//   // })
+// })
+
+
+

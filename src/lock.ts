@@ -35,7 +35,7 @@ export class Lock {
    * @param {RedisClient} redisClient     a promise based redis client (default in v4.x)
    * @param {Object} options              [default values for lock instance]
    */
-  constructor (redisClient: RedisClient, options = {} as OptionalLockOptions) {
+  constructor(redisClient: RedisClient, options = {} as OptionalLockOptions) {
     if (!redisClient) throw new Error(`[${packageName}] - No redisClient provided.`)
     this.client = redisClient
     const defaultOptions = this.getOptions(options)
@@ -49,8 +49,8 @@ export class Lock {
    * @param lockName part of redis key after the prefix
    * @returns the prefix:lockName as combined string
    */
-  private getRedisKey (lockName: string): string {
-    if (!lockName || typeof lockName !== 'string') throw new Error(`[${packageName}] - Invalid lockName provided! Must be a string.`)
+  public getRedisKey(lockName: string): string {
+    if (!lockName || typeof lockName !== 'string') throw new Error(`[${packageName}] - Invalid lockName provided! Must be a non empty string.`)
     return `${packageName}:${lockName}`
   }
 
@@ -59,13 +59,13 @@ export class Lock {
    * @param lockSpecificOptions optional overrides of default lock options
    * @returns merged LockOptions, falls back to default if no OptionalLockOptions provided
    */
-  public getOptions (lockSpecificOptions = {} as OptionalLockOptions): LockOptions {
+  public getOptions(lockSpecificOptions = {} as OptionalLockOptions): LockOptions {
     const options = { // use default if no lock-specific stuff
-      retryLimit: lockSpecificOptions.retryLimit || this.defaultRetryLimit,
-      retryDelay: lockSpecificOptions.retryDelay || this.defaultRetryDelay,
-      ttl: lockSpecificOptions.ttl || this.defaultTtl
+      retryLimit: lockSpecificOptions.retryLimit !== undefined ? lockSpecificOptions.retryLimit : this.defaultRetryLimit,
+      retryDelay: lockSpecificOptions.retryDelay !== undefined ? lockSpecificOptions.retryDelay : this.defaultRetryDelay,
+      ttl: lockSpecificOptions.ttl !== undefined ? lockSpecificOptions.ttl : this.defaultTtl
     }
-// hmmm
+
     if (!(typeof options.retryLimit === 'number' && options.retryLimit > 0)) throw new Error(`[${packageName}] - Invalid retryLimit provided! Must be a number greater than 0.`)
     if (!(typeof options.retryDelay === 'number' && options.retryDelay > 0)) throw new Error(`[${packageName}] - Invalid retryDelay provided! Must be a number greater than 0.`)
     if (!(typeof options.ttl === 'number' && options.ttl >= 0)) throw new Error(`[${packageName}] - Invalid ttl provided! Must be a number greater than or equal to 0.`)
@@ -80,7 +80,7 @@ export class Lock {
    * @param ttl maximum amount of time the lock lives in redis - infinite if 0
    * @returns boolean whether lock has been applied or not
    */
-  private async applyLock (key: string, payload: string, ttl: number): Promise<boolean> {
+  public async applyLock(key: string, payload: string, ttl: number): Promise<boolean> {
     const lockApplied = await this.client.setNX(key, payload) as unknown as boolean
     // We check for lockApplied so existing Lock ttl does not get extended - see acquireLock loop
     if (ttl && lockApplied) {
@@ -93,7 +93,7 @@ export class Lock {
    * Deletes the lock from redis
    * @param lockName part of redis key after the prefix
    */
-  public async releaseLock (lockName: string): Promise<void> {
+  public async releaseLock(lockName: string): Promise<void> {
     const key = this.getRedisKey(lockName)
     await this.client.del(key)
   }
@@ -109,7 +109,7 @@ export class Lock {
    * @param lockSpecificOptions optional overrides of default lock options
    * @returns boolean whether lock has been applied or not
    */
-  public async acquireLock (lockName: string, lockSpecificOptions = {} as OptionalLockOptions): Promise<boolean> {
+  public async acquireLock(lockName: string, lockSpecificOptions = {} as OptionalLockOptions): Promise<boolean> {
     const { retryLimit, retryDelay, ttl } = this.getOptions(lockSpecificOptions)
 
     const key = this.getRedisKey(lockName)
@@ -117,7 +117,7 @@ export class Lock {
     let lockApplied = await this.applyLock(key, payload, ttl)
 
     let counter = 0
-    while(!lockApplied && counter < retryLimit) {
+    while (!lockApplied && counter < retryLimit) {
       await sleep(retryDelay)
       lockApplied = await this.applyLock(key, payload, ttl)
       counter++
