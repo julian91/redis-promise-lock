@@ -21,7 +21,7 @@ export class Lock {
 
   private client: RedisClient
   private defaultRetryLimit = 10
-  private defaultRetryDelay = 1000
+  private defaultRetryDelay = 100
   private defaultTtl = 3
 
   /**
