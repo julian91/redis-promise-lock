@@ -1,6 +1,6 @@
 {
   "name": "redis-promise-lock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple promise-based redis lock. No bells, no whistles.",
   "main": "lib/lock.js",
   "scripts": {
@@ -17,6 +17,11 @@
   ],
   "author": "Julian Kaminski",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julian91/redis-promise-lock.git"
+  },
+  "homepage": "https://github.com/julian91/redis-promise-lock#readme",
   "ts-standard": {
     "project": "./tsconfig.json"
   },
