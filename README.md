@@ -24,11 +24,11 @@ const client = createClient({
 
 ;(async () => {
   const connected = await client.connect()
-  const { acquireLock, releaseLock } = new Lock(client)
+  const lockerRoom = new Lock(client)
 
-  await acquireLock('myawesomelock')
+  await lockerRoom.acquireLock('myawesomelock')
   // ... do some stuff while the lock is active
-  await releaseLock('myawesomelock')
+  await lockerRoom.releaseLock('myawesomelock')
 
 })()
 ```
