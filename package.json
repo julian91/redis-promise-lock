@@ -1,8 +1,8 @@
 {
   "name": "redis-promise-lock",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Simple promise-based redis lock. No bells, no whistles.",
-  "main": "lib/lock.js",
+  "main": "lib/src/lock.js",
   "scripts": {
     "test": "jest",
     "compile": "tsc",
